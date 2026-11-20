@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f8fafc" />
+  <meta name="description" content="Test your knowledge of country flags with Flagly." />
+  <title>Flagly — Flag Quiz</title>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .flag-image {
+      aspect-ratio: 3 / 2;
+      object-fit: contain;
+    }
+
+    .transition-theme {
+      transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+    }
+
+    button, input {
+      outline-offset: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 transition-theme dark:bg-[#0c0d0f] dark:text-slate-100">
+
+  <div class="min-h-screen flex flex-col">
+
+    <!-- NAVBAR -->
+    <header class="border-b border-slate-200/80 dark:border-white/[0.07]">
+      <nav class="max-w-5xl mx-auto px-5 sm:px-8 h-[72px] flex items-center justify-between">
+
+        <a href="#" class="flex items-center gap-2.5" aria-label="Flagly home">
+          <div class="w-8 h-8 rounded-lg bg-slate-900 dark:bg-white flex items-center justify-center">
+            <svg class="w-[17px] h-[17px] text-white dark:text-slate-900" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 21V4m0 0c7-4 9 3 14 0v10c-5 3-7-4-14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="font-semibold tracking-tight text-[17px]">flagly<span class="text-slate-400">.</span></span>
+        </a>
+
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:block text-xs text-slate-500 dark:text-slate-400">Country guessing game</span>
+
+          <!-- THEME SWITCH -->
+          <button id="themeToggle"
+            class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-theme"
+            aria-label="Switch theme"
+            title="Switch theme">
+
+            <!-- Moon -->
+            <svg id="moonIcon" class="w-[18px] h-[18px] text-slate-600 dark:text-slate-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20.2 15.4A8.3 8.3 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <!-- Sun -->
+            <svg id="sunIcon" class="hidden w-[18px] h-[18px] text-amber-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-1 w-full max-w-5xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
+
+      <!-- PAGE INTRO -->
+      <section class="mb-8 sm:mb-10">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <p class="text-xs font-medium tracking-wide uppercase text-slate-500 dark:text-slate-400">
+            Geography · Quiz
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 class="text-3xl sm:text-[40px] font-semibold tracking-tight leading-tight">
+              Guess the flag.
+            </h1>
+            <p class="mt-2 text-sm sm:text-base text-slate-500 dark:text-slate-400">
+              How many countries can you recognize?
+            </p>
+          </div>
+
+          <button id="restartBtn"
+            class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors self-start sm:self-auto flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 11a8 8 0 0 0-14-5L4 8m0-4v4h4m-4 5a8 8 0 0 0 14 5l2-2m0 4v-4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Restart quiz
+          </button>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="grid grid-cols-2 gap-3 sm:gap-4 mb-8" aria-label="Quiz statistics">
+        <div class="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] p-4 sm:p-5 transition-theme">
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Score</p>
+          <div class="flex items-baseline gap-1.5">
+            <span id="score" class="text-2xl sm:text-3xl font-semibold tabular-nums">0</span>
+            <span class="text-xs text-slate-400">pts</span>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] p-4 sm:p-5 transition-theme">
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Streak</p>
+          <div class="flex items-baseline gap-1.5">
+            <span id="streak" class="text-2xl sm:text-3xl font-semibold tabular-nums">0</span>
+            <span class="text-xs text-slate-400">correct</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUIZ CARD -->
+      <section class="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] overflow-hidden transition-theme">
+
+        <!-- Progress -->
+        <div class="h-1 w-full bg-slate-100 dark:bg-white/[0.05]">
+          <div id="progressBar" class="h-full bg-slate-900 dark:bg-white transition-all duration-300" style="width:10%"></div>
+        </div>
+
+        <div class="p-5 sm:p-8 lg:p-10">
+
+          <div class="flex items-center justify-between mb-7">
+            <span class="text-sm font-medium">Identify this country</span>
+            <span id="difficulty"
+              class="text-[11px] font-medium px-2.5 py-1 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400">
+              Easy
+            </span>
+          </div>
+
+          <!-- FLAG IMAGE -->
+          <div class="relative bg-slate-50 dark:bg-[#1a1b1e] rounded-xl border border-slate-100 dark:border-white/[0.04] min-h-[210px] sm:min-h-[300px] flex items-center justify-center p-8 sm:p-12 transition-theme">
+
+            <img
+              id="flagImage"
+              src=""
+              alt="Country flag to identify"
+              width="320"
+              height="213"
+              fetchpriority="high"
+              decoding="async"
+              class="flag-image w-full max-w-[320px] sm:max-w-[380px] rounded-md shadow-sm"
+            />
+
+            <div id="flagLoading" class="hidden absolute inset-0 items-center justify-center bg-slate-50 dark:bg-[#1a1b1e]">
+              <div class="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-slate-900 dark:border-t-white animate-spin"></div>
+            </div>
+          </div>
+
+          <!-- HINT -->
+          <div id="hintContainer" class="hidden mt-4 rounded-xl bg-slate-50 dark:bg-white/[0.04] px-4 py-3">
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              <span class="font-medium text-slate-700 dark:text-slate-200">Hint:</span>
+              <span id="hintText">This country is in Asia.</span>
+            </p>
+          </div>
+
+          <!-- ANSWER FORM -->
+          <form id="answerForm" class="mt-6" autocomplete="off">
+            <label for="answerInput" class="block text-sm font-medium mb-2.5">
+              Your answer
+            </label>
+
+            <div class="flex flex-col sm:flex-row gap-2.5">
+              <input
+                id="answerInput"
+                type="text"
+                name="answer"
+                placeholder="Type a country name..."
+                maxlength="60"
+                autocapitalize="words"
+                spellcheck="false"
+                aria-describedby="feedback"
+                class="w-full min-w-0 flex-1 h-12 rounded-xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#0c0d0f] px-4 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 dark:focus:ring-white/5 transition-theme"
+              />
+
+              <button
+                type="submit"
+                id="answerBtn"
+                class="h-12 px-7 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-200 active:scale-[0.98] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-slate-400">
+                Answer
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </section>
+
+      <!-- BOTTOM NOTE -->
+      <footer class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 dark:text-slate-500">
+        <p>Take your time. Think globally.</p>
+        <p>Made for curious minds.</p>
+      </footer>
+
+    </main>
+  </div>
+
+<script>
+  /* ==========================================
+     THEME SYSTEM
+     Light / Dark / System preference
+  ========================================== */
+
+  const html = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  const moonIcon = document.getElementById('moonIcon');
+  const sunIcon = document.getElementById('sunIcon');
+  let countryRev = {};
+  let countryRaw = {};
+  let countryList = {};
+  let countryQuestion = {};
+  let countryQuestionLowercase = {};
+
+  function applyTheme(theme) {
+    const isDark = theme === 'dark';
+
+    html.classList.toggle('dark', isDark);
+
+    moonIcon.classList.toggle('hidden', isDark);
+    sunIcon.classList.toggle('hidden', !isDark);
+
+    localStorage.setItem('flagly-theme', theme);
+  }
+
+  const savedTheme = localStorage.getItem('flagly-theme');
+
+  applyTheme(
+    savedTheme ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+  );
+
+  themeToggle.addEventListener('click', () => {
+    applyTheme(html.classList.contains('dark') ? 'light' : 'dark');
+  });
+
+
+  async function getData() {
+    const url = "/country";
+    try {
+        const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            countryRaw = result;
+            let countryList = Object.keys(result);
+            let randomIndex = Math.floor(Math.random() * countryList.length);
+            countryQuestion = countryList[randomIndex];
+            countryQuestionLowercase = countryList[randomIndex].toLowerCase();
+            console.log(countryQuestionLowercase);
+            console.log(countryQuestion);
+    } catch (error) {
+        console.error(error.message);
+    }
+
+    const urlRev = "/country/rev";
+    try {
+        const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            countryRev = result;
+    } catch (error) {
+        console.error(error.message);
+    }
+  }
+
+  async function loadQuestion() {
+    await getData();
+    if(!localStorage.getItem("score")) {
+        localStorage.setItem("score", 0);
+        localStorage.setItem("streak", 0);
+    }
+    flagImage.src = `https://flagcdn.com/w1280/${countryQuestionLowercase}.png`;
+  }
+
+
+  /* ==========================================
+     QUIZ STATE
+  ========================================== */
+
+  let score = localStorage.getItem("score");
+  let streak = localStorage.getItem("streak");
+  let hintUsed = false;
+  let answered = false;
+
+  const flagImage = document.getElementById('flagImage');
+  const answerInput = document.getElementById('answerInput');
+  const answerForm = document.getElementById('answerForm');
+  const feedback = document.getElementById('feedback');
+  const answerBtn = document.getElementById('answerBtn');
+
+  const scoreEl = document.getElementById('score');
+  const streakEl = document.getElementById('streak');
+  const progressBar = document.getElementById('progressBar');
+
+
+
+  /* ==========================================
+     HELPERS
+  ========================================== */
+
+  function normalizeAnswer(value) {
+    return value
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  function capitalizeWords(teks) {
+    return teks
+        .toLowerCase()
+        .split(' ')
+        .map(kata => kata.charAt(0).toUpperCase() + kata.slice(1))
+        .join(' ');
+  }
+
+
+  /* ==========================================
+     START
+  ========================================== */
+
+  loadQuestion();
+
+  answerForm.addEventListener('submit', (event) => {
+    // Mencegah halaman refresh/reload
+    event.preventDefault(); 
+
+    
+    const answer = capitalizeWords(answerInput.value);
+    if(countryRaw[countryQuestion] === answer) {
+        console.log("goodbnoy");
+    } else {
+        console.log("djdsa");
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "country-flag-guesser",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Joko Kodok",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "discord.js": "^14.28.1",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  }
+}
