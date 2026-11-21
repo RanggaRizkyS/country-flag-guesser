@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#f8fafc" />
   <meta name="description" content="Test your knowledge of country flags with Flagly." />
   <title>Flagly — Flag Quiz</title>
+  <link href="/vendor/aos.css">
 
   <script>
     tailwind.config = {
@@ -21,6 +22,8 @@
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/vendor/sweetalert2.all.min.js"></script>
+  <script src="/vendor/aos"></script>
 
   <style>
     * { -webkit-tap-highlight-color: transparent; }
@@ -200,7 +203,7 @@
                 id="answerInput"
                 type="text"
                 name="answer"
-                placeholder="Type a country name..."
+                placeholder="Answer must be English"
                 maxlength="60"
                 autocapitalize="words"
                 spellcheck="false"
@@ -239,11 +242,14 @@
   const themeToggle = document.getElementById('themeToggle');
   const moonIcon = document.getElementById('moonIcon');
   const sunIcon = document.getElementById('sunIcon');
+  let difficulty;
   let countryRev = {};
   let countryRaw = {};
   let countryList = {};
   let countryQuestion = {};
   let countryQuestionLowercase = {};
+  let acceptedAnswer = [];
+  let scoreIncrease;
 
   function applyTheme(theme) {
     const isDark = theme === 'dark';
@@ -277,29 +283,42 @@
             }
 
             const result = await response.json();
-            countryRaw = result;
-            let countryList = Object.keys(result);
-            let randomIndex = Math.floor(Math.random() * countryList.length);
-            countryQuestion = countryList[randomIndex];
-            countryQuestionLowercase = countryList[randomIndex].toLowerCase();
-            console.log(countryQuestionLowercase);
-            console.log(countryQuestion);
+            let difficultyKeys = Object.keys(result);
+            let difficultyIndex = Math.floor(Math.random() * difficultyKeys.length);
+            difficulty = difficultyKeys[difficultyIndex];
+            if(difficulty === "easy") { scoreIncrease = 100 }
+            if(difficulty === "medium") { scoreIncrease = 500 }
+            else { scoreIncrease = 1000 };
+            document.getElementById("difficulty").textContent = capitalizeWords(difficulty);
+            countryList = result[difficulty];
+            countryRaw = result[difficulty];
+            let countryLists = Object.keys(result[difficulty]);
+            let randomIndex = Math.floor(Math.random() * countryLists.length);
+            countryQuestion = countryLists[randomIndex];
+            countryQuestionLowercase = countryLists[randomIndex].toLowerCase();
     } catch (error) {
         console.error(error.message);
     }
 
     const urlRev = "/country/rev";
     try {
-        const response = await fetch(url);
+        const response = await fetch(urlRev);
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
 
             const result = await response.json();
             countryRev = result;
+            acceptedAnswers = [
+                countryList[countryQuestion].name,
+                ...(countryList[countryQuestion].aliases || [])
+            ].map(name => normalizeAnswer(name));
     } catch (error) {
         console.error(error.message);
     }
+
+    scoreEl.textContent = parseInt(localStorage.getItem("score"));
+    streakEl.textContent = parseInt(localStorage.getItem("streak"));
   }
 
   async function loadQuestion() {
@@ -338,13 +357,13 @@
   ========================================== */
 
   function normalizeAnswer(value) {
-    return value
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, ' ');
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ');
   }
 
   function capitalizeWords(teks) {
@@ -363,15 +382,67 @@
   loadQuestion();
 
   answerForm.addEventListener('submit', (event) => {
-    // Mencegah halaman refresh/reload
     event.preventDefault(); 
 
     
     const answer = capitalizeWords(answerInput.value);
-    if(countryRaw[countryQuestion] === answer) {
-        console.log("goodbnoy");
+    if (acceptedAnswers.includes(normalizeAnswer(answerInput.value))) {
+        localStorage.setItem("streak", `${parseInt(localStorage.getItem("streak")) + 1}`);
+        localStorage.setItem("score", `${parseInt(scoreIncrease)}`);
+        let timerInterval;
+        Swal.fire({
+          title: "Correct!",
+          html: `You guessing the right country!\nCurrect streak: <span style="color: #f02432">${localStorage.getItem("streak")}<span>`,
+          timer: 2000,
+          timerProgressBar: true,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+          willClose: () => {
+            clearInterval(timerInterval);
+          }
+        }).then((result) => {
+          if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
+          loadQuestion();
+        });
     } else {
-        console.log("djdsa");
+        if(localStorage.getItem("streak") > 0){
+          let streak_rev = parseInt(localStorage.getItem("streak"));
+          localStorage.setItem("streak", 0);
+          let timerInterval;
+          Swal.fire({
+            title: "Wrong!",
+            html: `You guessing the wrong country\nCorrect answer is <span style="font-weight: bold;">${countryRaw[countryQuestion].name}</span>, Now your ${streak_rev} Streak is gone.`,
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+            willClose: () => {
+              clearInterval(timerInterval);
+            }
+          }).then((result) => {
+            if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
+            loadQuestion();
+          });
+        } else {
+          let timerInterval;
+          Swal.fire({
+            title: "Wrong!",
+            html: `You guessing the wrong country\nCorrect answer is <span style="font-weight: bold;">${countryRaw[countryQuestion].name}</span>.`,
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+            willClose: () => {
+              clearInterval(timerInterval);
+            }
+          }).then((result) => {
+            if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
+            loadQuestion();
+          });
+        }
     }
   });
 </script>
