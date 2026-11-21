@@ -9,24 +9,14 @@
   <title>Flagly — Flag Quiz</title>
   <link href="/vendor/aos.css">
 
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-          },
-        },
-      },
-    }
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="/vendor/sweetalert2.all.min.js"></script>
-  <script src="/vendor/aos"></script>
+  <script src="/vendor/aos.js"></script>
 
+  <style type="text/tailwindcss">
+    @custom-variant dark (&:where(.dark, .dark *));
+  </style>
   <style>
-    * { -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: Inter, ui-sans-serif, system-ui, sans-serif;
@@ -38,7 +28,50 @@
     }
 
     .transition-theme {
-      transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+      transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+    }
+
+    /* TIMER PROGRESS */
+    #progressBar {
+      width: 100%;
+      transform-origin: left center;
+      transition: width .12s linear, background-color .2s ease;
+    }
+
+    #progressBar.timer-warning {
+      background-color: #f59e0b !important;
+    }
+
+    #progressBar.timer-danger {
+      background-color: #ef4444 !important;
+      box-shadow: 0 0 10px rgb(239 68 68 / 35%);
+    }
+
+    /* FLAG ANIMATION */
+    .flag-enter {
+      animation: flagEnter .35s ease both;
+    }
+
+    @keyframes flagEnter {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* SCORE ANIMATION */
+    .stat-pop {
+      animation: statPop .35s ease;
+    }
+
+    @keyframes statPop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.12); }
+      100% { transform: scale(1); }
     }
 
     button, input {
@@ -117,14 +150,6 @@
               How many countries can you recognize?
             </p>
           </div>
-
-          <button id="restartBtn"
-            class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors self-start sm:self-auto flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M20 11a8 8 0 0 0-14-5L4 8m0-4v4h4m-4 5a8 8 0 0 0 14 5l2-2m0 4v-4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Restart quiz
-          </button>
         </div>
       </section>
 
@@ -150,9 +175,9 @@
       <!-- QUIZ CARD -->
       <section class="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#141518] overflow-hidden transition-theme">
 
-        <!-- Progress -->
-        <div class="h-1 w-full bg-slate-100 dark:bg-white/[0.05]">
-          <div id="progressBar" class="h-full bg-slate-900 dark:bg-white transition-all duration-300" style="width:10%"></div>
+        <!-- PROGRESS BAR -->
+        <div class="h-2 w-full bg-slate-100 dark:bg-white/[0.05]" aria-label="Question timer">
+          <div id="progressBar" class="h-full bg-emerald-500 rounded-r-full" style="width:100%"></div>
         </div>
 
         <div class="p-5 sm:p-8 lg:p-10">
@@ -182,14 +207,6 @@
             <div id="flagLoading" class="hidden absolute inset-0 items-center justify-center bg-slate-50 dark:bg-[#1a1b1e]">
               <div class="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-slate-900 dark:border-t-white animate-spin"></div>
             </div>
-          </div>
-
-          <!-- HINT -->
-          <div id="hintContainer" class="hidden mt-4 rounded-xl bg-slate-50 dark:bg-white/[0.04] px-4 py-3">
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-              <span class="font-medium text-slate-700 dark:text-slate-200">Hint:</span>
-              <span id="hintText">This country is in Asia.</span>
-            </p>
           </div>
 
           <!-- ANSWER FORM -->
@@ -233,124 +250,78 @@
   </div>
 
 <script>
+  if (!localStorage.getItem("score")) {
+    localStorage.setItem("score", 0);
+    localStorage.setItem("streak", 0);
+  }
+
   /* ==========================================
      THEME SYSTEM
-     Light / Dark / System preference
   ========================================== */
-
   const html = document.documentElement;
-  const themeToggle = document.getElementById('themeToggle');
-  const moonIcon = document.getElementById('moonIcon');
-  const sunIcon = document.getElementById('sunIcon');
-  let difficulty;
-  let countryRev = {};
-  let countryRaw = {};
-  let countryList = {};
-  let countryQuestion = {};
-  let countryQuestionLowercase = {};
-  let acceptedAnswer = [];
-  let scoreIncrease;
+  const themeToggle = document.getElementById("themeToggle");
+  const moonIcon = document.getElementById("moonIcon");
+  const sunIcon = document.getElementById("sunIcon");
 
   function applyTheme(theme) {
-    const isDark = theme === 'dark';
+      const isDark = theme === "dark";
 
-    html.classList.toggle('dark', isDark);
+      html.classList.toggle("dark", isDark);
 
-    moonIcon.classList.toggle('hidden', isDark);
-    sunIcon.classList.toggle('hidden', !isDark);
+      document.body.classList.toggle("dark", isDark);
 
-    localStorage.setItem('flagly-theme', theme);
+      moonIcon.classList.toggle("hidden", isDark);
+      sunIcon.classList.toggle("hidden", !isDark);
+
+      localStorage.setItem("flagly-theme", theme);
+
+      document.querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", isDark ? "#0c0d0f" : "#f8fafc");
   }
 
-  const savedTheme = localStorage.getItem('flagly-theme');
+ const savedTheme = localStorage.getItem("flagly-theme");
 
   applyTheme(
-    savedTheme ||
-    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      savedTheme ??
+      (window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light")
   );
 
-  themeToggle.addEventListener('click', () => {
-    applyTheme(html.classList.contains('dark') ? 'light' : 'dark');
+  themeToggle.addEventListener("click", () => {
+      const newTheme = html.classList.contains("dark")
+          ? "light"
+          : "dark";
+
+      applyTheme(newTheme);
   });
-
-
-  async function getData() {
-    const url = "/country";
-    try {
-        const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            let difficultyKeys = Object.keys(result);
-            let difficultyIndex = Math.floor(Math.random() * difficultyKeys.length);
-            difficulty = difficultyKeys[difficultyIndex];
-            if(difficulty === "easy") { scoreIncrease = 100 }
-            if(difficulty === "medium") { scoreIncrease = 500 }
-            else { scoreIncrease = 1000 };
-            document.getElementById("difficulty").textContent = capitalizeWords(difficulty);
-            countryList = result[difficulty];
-            countryRaw = result[difficulty];
-            let countryLists = Object.keys(result[difficulty]);
-            let randomIndex = Math.floor(Math.random() * countryLists.length);
-            countryQuestion = countryLists[randomIndex];
-            countryQuestionLowercase = countryLists[randomIndex].toLowerCase();
-    } catch (error) {
-        console.error(error.message);
-    }
-
-    const urlRev = "/country/rev";
-    try {
-        const response = await fetch(urlRev);
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            countryRev = result;
-            acceptedAnswers = [
-                countryList[countryQuestion].name,
-                ...(countryList[countryQuestion].aliases || [])
-            ].map(name => normalizeAnswer(name));
-    } catch (error) {
-        console.error(error.message);
-    }
-
-    scoreEl.textContent = parseInt(localStorage.getItem("score"));
-    streakEl.textContent = parseInt(localStorage.getItem("streak"));
-  }
-
-  async function loadQuestion() {
-    await getData();
-    if(!localStorage.getItem("score")) {
-        localStorage.setItem("score", 0);
-        localStorage.setItem("streak", 0);
-    }
-    flagImage.src = `https://flagcdn.com/w1280/${countryQuestionLowercase}.png`;
-  }
-
 
   /* ==========================================
      QUIZ STATE
   ========================================== */
+  let difficulty;
+  let countryRev = {};
+  let countryRaw = {};
+  let countryList = {};
+  let countryQuestion = "";
+  let countryQuestionLowercase = "";
+  let acceptedAnswers = [];
+  let scoreIncrease = 0;
 
-  let score = localStorage.getItem("score");
-  let streak = localStorage.getItem("streak");
   let hintUsed = false;
   let answered = false;
+  let timerInterval = null;
 
-  const flagImage = document.getElementById('flagImage');
-  const answerInput = document.getElementById('answerInput');
-  const answerForm = document.getElementById('answerForm');
-  const feedback = document.getElementById('feedback');
-  const answerBtn = document.getElementById('answerBtn');
+  const QUESTION_TIME = 30;
 
-  const scoreEl = document.getElementById('score');
-  const streakEl = document.getElementById('streak');
-  const progressBar = document.getElementById('progressBar');
+  const flagImage = document.getElementById("flagImage");
+  const answerInput = document.getElementById("answerInput");
+  const answerForm = document.getElementById("answerForm");
+  const answerBtn = document.getElementById("answerBtn");
 
-
+  const scoreEl = document.getElementById("score");
+  const streakEl = document.getElementById("streak");
+  const progressBar = document.getElementById("progressBar");
 
   /* ==========================================
      HELPERS
@@ -358,22 +329,207 @@
 
   function normalizeAnswer(value) {
     return String(value ?? "")
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s]/g, '')
-        .replace(/\s+/g, ' ');
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
-  function capitalizeWords(teks) {
-    return teks
-        .toLowerCase()
-        .split(' ')
-        .map(kata => kata.charAt(0).toUpperCase() + kata.slice(1))
-        .join(' ');
+  function capitalizeWords(text) {
+    return text
+      .toLowerCase()
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   }
 
+  function popStat(element) {
+    element.classList.remove("stat-pop");
+    void element.offsetWidth;
+    element.classList.add("stat-pop");
+  }
+
+  /* ==========================================
+     TIMER
+  ========================================== */
+
+  function stopTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function updateProgress(remaining) {
+    const percent = Math.max(0, (remaining / QUESTION_TIME) * 100);
+
+    progressBar.style.width = percent + "%";
+
+    progressBar.classList.toggle(
+      "timer-warning",
+      remaining <= 10 && remaining > 5
+    );
+
+    progressBar.classList.toggle(
+      "timer-danger",
+      remaining <= 5
+    );
+  }
+
+  function startTimer() {
+    stopTimer();
+
+    answered = false;
+    answerBtn.disabled = false;
+    answerInput.disabled = false;
+
+    const startedAt = Date.now();
+
+    updateProgress(QUESTION_TIME);
+
+    timerInterval = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        QUESTION_TIME - (Date.now() - startedAt) / 1000
+      );
+
+      updateProgress(remaining);
+
+      if (remaining <= 0) {
+        stopTimer();
+
+        if (answered) return;
+
+        answered = true;
+        answerBtn.disabled = true;
+        answerInput.disabled = true;
+
+        const oldStreak = parseInt(
+          localStorage.getItem("streak") || "0",
+          10
+        );
+
+        localStorage.setItem("streak", "0");
+        streakEl.textContent = "0";
+
+        if (oldStreak > 0) {
+          popStat(streakEl);
+        }
+
+        Swal.fire({
+          title: "Too Slow!",
+          text: "Time is up. Your streak has been reset.",
+          icon: "warning",
+          timer: 1800,
+          timerProgressBar: true,
+          showConfirmButton: false
+        }).then(() => loadQuestion());
+      }
+    }, 100);
+  }
+
+  /* ==========================================
+     GET COUNTRY DATA
+  ========================================== */
+
+  async function getData() {
+    try {
+      const url = "/country";
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      const difficultyKeys = Object.keys(result);
+      const difficultyIndex = Math.floor(
+        Math.random() * difficultyKeys.length
+      );
+
+      difficulty = difficultyKeys[difficultyIndex];
+
+      if (difficulty === "easy") {
+        scoreIncrease = 100;
+      } else if (difficulty === "medium") {
+        scoreIncrease = 500;
+      } else {
+        scoreIncrease = 1000;
+      }
+
+      document.getElementById("difficulty").textContent =
+        capitalizeWords(difficulty);
+
+      countryList = result[difficulty];
+      countryRaw = result[difficulty];
+
+      const countryLists = Object.keys(result[difficulty]);
+      const randomIndex = Math.floor(Math.random() * countryLists.length);
+
+      countryQuestion = countryLists[randomIndex];
+      countryQuestionLowercase = countryQuestion.toLowerCase();
+
+    } catch (error) {
+      console.error(error.message);
+    }
+
+    /* REVERSE COUNTRY DATA */
+    try {
+      const urlRev = "/country/rev";
+      const response = await fetch(urlRev);
+
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      countryRev = result;
+
+      acceptedAnswers = [
+        countryList[countryQuestion].name,
+        ...(countryList[countryQuestion].aliases || [])
+      ].map(name => normalizeAnswer(name));
+
+    } catch (error) {
+      console.error(error.message);
+    }
+
+    scoreEl.textContent = parseInt(localStorage.getItem("score") || "0");
+    streakEl.textContent = parseInt(localStorage.getItem("streak") || "0");
+  }
+
+  /* ==========================================
+     LOAD QUESTION
+  ========================================== */
+
+  async function loadQuestion() {
+    stopTimer();
+
+    answerInput.value = "";
+    answerInput.disabled = false;
+    answerBtn.disabled = false;
+
+    await getData();
+
+    if (!countryQuestion) return;
+
+    flagImage.classList.remove("flag-enter");
+
+    flagImage.src =
+      `https://flagcdn.com/w1280/${countryQuestionLowercase}.png`;
+
+    flagImage.onload = () => {
+      flagImage.classList.remove("flag-enter");
+      void flagImage.offsetWidth;
+      flagImage.classList.add("flag-enter");
+    };
+
+    startTimer();
+
+    answerInput.focus({ preventScroll: true });
+  }
 
   /* ==========================================
      START
@@ -381,68 +537,81 @@
 
   loadQuestion();
 
-  answerForm.addEventListener('submit', (event) => {
-    event.preventDefault(); 
+  /* ==========================================
+     ANSWER SUBMISSION
+  ========================================== */
 
-    
-    const answer = capitalizeWords(answerInput.value);
-    if (acceptedAnswers.includes(normalizeAnswer(answerInput.value))) {
-        localStorage.setItem("streak", `${parseInt(localStorage.getItem("streak")) + 1}`);
-        localStorage.setItem("score", `${parseInt(scoreIncrease)}`);
-        let timerInterval;
-        Swal.fire({
-          title: "Correct!",
-          html: `You guessing the right country!\nCurrect streak: <span style="color: #f02432">${localStorage.getItem("streak")}<span>`,
-          timer: 2000,
-          timerProgressBar: true,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-          willClose: () => {
-            clearInterval(timerInterval);
-          }
-        }).then((result) => {
-          if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
-          loadQuestion();
-        });
+  answerForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    if (answered) return;
+
+    answered = true;
+    stopTimer();
+
+    answerBtn.disabled = true;
+    answerInput.disabled = true;
+
+    const answer = answerInput.value;
+
+    /* CORRECT */
+    if (acceptedAnswers.includes(normalizeAnswer(answer))) {
+
+      const newStreak =
+        parseInt(localStorage.getItem("streak") || "0", 10) + 1;
+
+      const newScore =
+        parseInt(localStorage.getItem("score") || "0", 10) + scoreIncrease;
+
+      localStorage.setItem("streak", String(newStreak));
+      localStorage.setItem("score", String(newScore));
+
+      streakEl.textContent = newStreak;
+      scoreEl.textContent = newScore;
+
+      popStat(streakEl);
+      popStat(scoreEl);
+
+      Swal.fire({
+        title: "Correct!",
+        html: `You guessed the right country!<br>
+          Current streak:
+          <span style="color:#f02432;font-weight:700">${newStreak}</span>`,
+        icon: "success",
+        timer: 1600,
+        timerProgressBar: true,
+        showConfirmButton: false
+      }).then(() => loadQuestion());
+
     } else {
-        if(localStorage.getItem("streak") > 0){
-          let streak_rev = parseInt(localStorage.getItem("streak"));
-          localStorage.setItem("streak", 0);
-          let timerInterval;
-          Swal.fire({
-            title: "Wrong!",
-            html: `You guessing the wrong country\nCorrect answer is <span style="font-weight: bold;">${countryRaw[countryQuestion].name}</span>, Now your ${streak_rev} Streak is gone.`,
-            timer: 2000,
-            timerProgressBar: true,
-            didOpen: () => {
-              Swal.showLoading();
-            },
-            willClose: () => {
-              clearInterval(timerInterval);
-            }
-          }).then((result) => {
-            if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
-            loadQuestion();
-          });
-        } else {
-          let timerInterval;
-          Swal.fire({
-            title: "Wrong!",
-            html: `You guessing the wrong country\nCorrect answer is <span style="font-weight: bold;">${countryRaw[countryQuestion].name}</span>.`,
-            timer: 2000,
-            timerProgressBar: true,
-            didOpen: () => {
-              Swal.showLoading();
-            },
-            willClose: () => {
-              clearInterval(timerInterval);
-            }
-          }).then((result) => {
-            if (result.dismiss === Swal.DismissReason.timer) console.log("I was closed by the timer");
-            loadQuestion();
-          });
-        }
+
+      /* WRONG */
+      const oldStreak =
+        parseInt(localStorage.getItem("streak") || "0", 10);
+
+      localStorage.setItem("streak", "0");
+      streakEl.textContent = "0";
+
+      if (oldStreak > 0) {
+        popStat(streakEl);
+      }
+
+      const answerName =
+        countryRaw[countryQuestion]?.name || "Unknown";
+
+      Swal.fire({
+        title: "Wrong!",
+        html: oldStreak > 0
+          ? `You guessed the wrong country.<br>
+             Correct answer: <b>${answerName}</b><br>
+             Your ${oldStreak} streak is gone.`
+          : `You guessed the wrong country.<br>
+             Correct answer: <b>${answerName}</b>.`,
+        icon: "error",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false
+      }).then(() => loadQuestion());
     }
   });
 </script>
