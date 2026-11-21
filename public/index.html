@@ -435,7 +435,7 @@
 
   async function getData() {
     try {
-      const url = "/country";
+      const url = "/country.json";
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -477,7 +477,7 @@
 
     /* REVERSE COUNTRY DATA */
     try {
-      const urlRev = "/country/rev";
+      const urlRev = "/countryRev.json";
       const response = await fetch(urlRev);
 
       if (!response.ok) {
