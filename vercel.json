@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    },
+    {
+      "source": "/country",
+      "destination": "/country"
+    },
+    {
+      "source": "/country/rev",
+      "destination": "/country/rev"
+    },
+    {
+      "source": "/send",
+      "destination": "/send"
+    }
+  ]
+}
