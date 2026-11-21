@@ -2,6 +2,8 @@
   "version": 2,
   "rewrites": [
     { "source": "/send", "destination": "/index.js" },
-    { "source": "/(.*)", "destination": "/index.js" }
+    { "source": "/(.*)", "destination": "/index.js" },
+    { "source": "/country", "destination": "/index.js" },
+    { "source": "/country/rev", "destination": "/index.js" }
   ]
 }
